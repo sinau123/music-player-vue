@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { nanoid } from 'nanoid'
 import {
   Play,
@@ -29,7 +29,11 @@ interface ClientTrack {
 }
 
 // State
+const searchQuery = ref('')
 const clientTracks = ref<ClientTrack[]>([])
+const playlist = computed(() =>
+  clientTracks.value.filter((t) => t.name.toLowerCase().includes(searchQuery.value.toLowerCase())),
+)
 const currentTrack = ref<Track | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
@@ -475,13 +479,22 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
+            <div class="py-4">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search"
+                class="w-full px-4 py-2 border border-slate-600 rounded-lg"
+              />
+            </div>
+
             <div class="space-y-2 max-h-96 overflow-y-auto">
               <p v-if="clientTracks.length === 0" class="text-slate-400 text-center py-8">
                 No tracks yet. Add some music!
               </p>
 
               <div
-                v-for="track in clientTracks"
+                v-for="track in playlist"
                 :key="track.id"
                 :class="[
                   'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition',

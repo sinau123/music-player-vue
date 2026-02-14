@@ -34,9 +34,14 @@ import { getMp3Duration } from '../utils'
 // State
 const searchQuery = ref('')
 const clientTracks = ref<TrackMeta[]>([])
-const playlist = computed(() =>
-  clientTracks.value.filter((t) => t.name.toLowerCase().includes(searchQuery.value.toLowerCase())),
-)
+const playlist = computed(() => {
+  if (!searchQuery.value) {
+    return clientTracks.value
+  }
+  return clientTracks.value.filter((t) =>
+    t.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  )
+})
 const currentTrack = ref<Track | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)

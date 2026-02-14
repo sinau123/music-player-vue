@@ -18,19 +18,22 @@ import {
   ChartColumnIncreasing,
 } from 'lucide-vue-next'
 
-import { type Track, getAllTracks, saveTrack, deleteTrack, clearTracks, getTrack } from '../db'
+import {
+  type Track,
+  type TrackBlob,
+  type TrackMeta,
+  saveTrack,
+  deleteTrack,
+  clearTracks,
+  getTrackBlob,
+  getAllTracksMeta,
+  bulkSaveTracksMeta,
+} from '../db'
 import { getMp3Duration } from '../utils'
-
-// Types
-interface ClientTrack {
-  id: string
-  name: string
-  duration: number
-}
 
 // State
 const searchQuery = ref('')
-const clientTracks = ref<ClientTrack[]>([])
+const clientTracks = ref<TrackMeta[]>([])
 const playlist = computed(() =>
   clientTracks.value.filter((t) => t.name.toLowerCase().includes(searchQuery.value.toLowerCase())),
 )
@@ -43,6 +46,7 @@ const isMuted = ref(false)
 const showPlaylist = ref(true)
 const isUploading = ref(false)
 const enableVisualizer = ref(true)
+const audioUrl = ref<string | null>(null)
 
 // Refs
 const audioRef = ref<HTMLAudioElement | null>(null)
@@ -58,12 +62,8 @@ const animationRef = ref<number | null>(null)
 // Load tracks on mount
 onMounted(async () => {
   try {
-    const tracks = await getAllTracks()
-    clientTracks.value = tracks.map((t) => ({
-      id: t.id,
-      name: t.name,
-      duration: t.duration,
-    }))
+    const tracks = await getAllTracksMeta()
+    clientTracks.value = tracks
   } catch (err) {
     console.error(err)
   }
@@ -143,46 +143,24 @@ const handleFileUpload = async (e: Event) => {
 
   try {
     await Promise.all(
-      files.map(
-        (file) =>
-          new Promise<void>((resolve, reject) => {
-            if (!file.type.startsWith('audio/')) {
-              resolve()
-              return
-            }
+      files.map(async (file, index) => {
+        if (!file.type.startsWith('audio/')) return
 
-            const reader = new FileReader()
+        const dur = await getMp3Duration(file)
 
-            reader.onload = async (event) => {
-              try {
-                const dur = await getMp3Duration(file)
+        const track: TrackMeta & TrackBlob = {
+          id: nanoid(),
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          blob: file,
+          type: file.type,
+          duration: dur,
+          createdAt: new Date().getTime(),
+          order: index,
+        }
 
-                const track: Track = {
-                  id: nanoid(),
-                  name: file.name.replace(/\.[^/.]+$/, ''),
-                  data: event.target?.result as string,
-                  type: file.type,
-                  duration: dur,
-                }
-
-                await saveTrack(track)
-
-                clientTracks.value.push({
-                  id: track.id,
-                  name: track.name,
-                  duration: track.duration,
-                })
-
-                resolve()
-              } catch (err) {
-                reject(err)
-              }
-            }
-
-            reader.onerror = () => reject(reader.error)
-            reader.readAsDataURL(file)
-          }),
-      ),
+        await saveTrack(track)
+        clientTracks.value.push(track)
+      }),
     )
   } finally {
     isUploading.value = false
@@ -212,7 +190,14 @@ const togglePlay = () => {
 const playTrack = async (trackId: string | undefined) => {
   if (!trackId) return
 
-  const track = await getTrack(trackId)
+  const x = await getTrackBlob(trackId)
+  const y = clientTracks.value.find((track) => track.id === trackId)
+
+  if (!x || !y) {
+    return
+  }
+
+  const track = { ...x, ...y }
   if (!track) return
 
   currentTrack.value = track
@@ -288,11 +273,40 @@ const formatTime = (time: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+const handleShuffle = () => {
+  const shuffled = [...clientTracks.value]
+    .sort(() => Math.random() - 0.5)
+    .map((track, index) => ({ ...track, order: index }))
+  clientTracks.value = shuffled
+  bulkSaveTracksMeta(shuffled)
+}
+
 const totalDuration = () => clientTracks.value.reduce((acc, track) => acc + track.duration, 0)
 
 // Cleanup
 onBeforeUnmount(() => {
   if (animationRef.value) cancelAnimationFrame(animationRef.value)
+})
+
+watch(
+  () => currentTrack.value?.blob,
+  (blob) => {
+    if (audioUrl.value) {
+      URL.revokeObjectURL(audioUrl.value) // 🔥 cleanup old url
+      audioUrl.value = null
+    }
+
+    if (blob) {
+      audioUrl.value = URL.createObjectURL(blob)
+    }
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (audioUrl.value) {
+    URL.revokeObjectURL(audioUrl.value)
+  }
 })
 </script>
 
@@ -461,7 +475,7 @@ onBeforeUnmount(() => {
 
             <div class="flex items-center gap-2 py-4">
               <button
-                @click="clientTracks = [...clientTracks].sort(() => Math.random() - 0.5)"
+                @click="handleShuffle"
                 class="px-4 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg"
               >
                 <Shuffle class="size-4" />
@@ -526,7 +540,7 @@ onBeforeUnmount(() => {
         @loadedmetadata="duration = audioRef?.duration || 0"
         @ended="playNext"
       >
-        <source v-if="currentTrack" :src="currentTrack.data" :type="currentTrack.type" />
+        <source v-if="currentTrack && audioUrl" :src="audioUrl" :type="currentTrack.type" />
       </audio>
     </div>
   </div>

@@ -1,22 +1,33 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 
 const DB_NAME = 'MusicPlayerDB'
-const DB_VERSION = 4
-const STORE_NAME = 'tracks'
+const DB_VERSION = 7 // ⬅️ bump version when schema changes
 
-export interface Track {
+export interface TrackMeta {
   id: string
   name: string
-  data: string
   type: string
   duration: number
+  createdAt: number
+  order: number
 }
 
+export interface TrackBlob {
+  id: string
+  blob: Blob
+}
+
+export type Track = TrackMeta & TrackBlob
+
 interface MusicPlayerDB extends DBSchema {
-  tracks: {
+  tracks_meta: {
     key: string
-    value: Track
+    value: TrackMeta
     indexes: { 'by-name': string }
+  }
+  tracks_blob: {
+    key: string
+    value: TrackBlob
   }
 }
 
@@ -30,11 +41,17 @@ export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<MusicPlayerDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, {
+        if (!db.objectStoreNames.contains('tracks_meta')) {
+          const meta = db.createObjectStore('tracks_meta', {
             keyPath: 'id',
           })
-          store.createIndex('by-name', 'name')
+          meta.createIndex('by-name', 'name')
+        }
+
+        if (!db.objectStoreNames.contains('tracks_blob')) {
+          db.createObjectStore('tracks_blob', {
+            keyPath: 'id',
+          })
         }
       },
     })
@@ -43,37 +60,77 @@ export function getDB() {
   return dbPromise
 }
 
-export async function saveTrack(track: Track) {
+export async function saveTrack(input: {
+  id: string
+  name: string
+  type: string
+  duration: number
+  blob: Blob
+  order: number
+}) {
   const db = await getDB()
-  return db.put(STORE_NAME, track)
+
+  const tx = db.transaction(['tracks_meta', 'tracks_blob'], 'readwrite')
+
+  await Promise.all([
+    tx.objectStore('tracks_meta').put({
+      id: input.id,
+      name: input.name,
+      type: input.type,
+      duration: input.duration,
+      createdAt: Date.now(),
+      order: input.order,
+    }),
+    tx.objectStore('tracks_blob').put({
+      id: input.id,
+      blob: input.blob,
+    }),
+  ])
+
+  await tx.done
 }
 
-/* READ by ID */
-export async function getTrack(id: string) {
+export async function bulkSaveTracksMeta(tracks: TrackMeta[]) {
+  if (!tracks.length) return
+
   const db = await getDB()
-  return db.get(STORE_NAME, id)
+  const tx = db.transaction('tracks_meta', 'readwrite')
+  const store = tx.objectStore('tracks_meta')
+
+  for (const track of tracks) {
+    store.put(track)
+  }
+
+  await tx.done
 }
 
-/* READ ALL */
-export async function getAllTracks() {
+export async function getAllTracksMeta() {
   const db = await getDB()
-  return db.getAll(STORE_NAME)
+  return (await db.getAll('tracks_meta')).sort((a, b) => a.order - b.order)
 }
 
-/* READ by index */
-export async function getTracksByName(name: string) {
+export async function getTrackBlob(id: string) {
   const db = await getDB()
-  return db.getAllFromIndex(STORE_NAME, 'by-name', name)
+  return db.get('tracks_blob', id)
 }
 
-/* DELETE */
 export async function deleteTrack(id: string) {
   const db = await getDB()
-  return db.delete(STORE_NAME, id)
+  const tx = db.transaction(['tracks_meta', 'tracks_blob'], 'readwrite')
+
+  await Promise.all([
+    tx.objectStore('tracks_meta').delete(id),
+    tx.objectStore('tracks_blob').delete(id),
+  ])
+
+  await tx.done
 }
 
-/* CLEAR ALL */
 export async function clearTracks() {
   const db = await getDB()
-  return db.clear(STORE_NAME)
+  const tx = db.transaction(['tracks_meta', 'tracks_blob'], 'readwrite')
+
+  await Promise.all([tx.objectStore('tracks_meta').clear(), tx.objectStore('tracks_blob').clear()])
+
+  await tx.done
 }

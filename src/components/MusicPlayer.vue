@@ -313,6 +313,51 @@ onBeforeUnmount(() => {
     URL.revokeObjectURL(audioUrl.value)
   }
 })
+
+onMounted(() => {
+  if (!('mediaSession' in navigator)) return
+
+  navigator.mediaSession.setActionHandler('play', () => {
+    togglePlay()
+  })
+
+  navigator.mediaSession.setActionHandler('pause', () => {
+    togglePlay()
+  })
+
+  navigator.mediaSession.setActionHandler('nexttrack', () => {
+    playNext()
+  })
+
+  navigator.mediaSession.setActionHandler('previoustrack', () => {
+    playPrevious()
+  })
+})
+
+onBeforeUnmount(() => {
+  if (!('mediaSession' in navigator)) return
+
+  // Clean up handlers (important if component is reused)
+  navigator.mediaSession.setActionHandler('play', null)
+  navigator.mediaSession.setActionHandler('pause', null)
+  navigator.mediaSession.setActionHandler('nexttrack', null)
+  navigator.mediaSession.setActionHandler('previoustrack', null)
+})
+
+watch(
+  currentTrack,
+  (track) => {
+    if (!('mediaSession' in navigator) || !track) return
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.value?.name,
+      artist: currentTrack.value?.name,
+      album: '-',
+      artwork: [{ src: '', sizes: '512x512', type: 'image/png' }],
+    })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

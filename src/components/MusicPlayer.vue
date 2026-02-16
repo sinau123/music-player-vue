@@ -362,9 +362,9 @@ watch(
 
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
+    class="h-screen overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
   >
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-6xl w-full mx-auto">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1
@@ -375,7 +375,7 @@ watch(
         <p class="text-slate-400">Upload and play your favorite tracks</p>
       </div>
 
-      <div class="grid lg:grid-cols-3 gap-6">
+      <div class="flex flex-col lg:grid lg:grid-cols-3 gap-6">
         <!-- Main Player -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Visualizer -->
@@ -423,7 +423,7 @@ watch(
             </div>
 
             <!-- Controls -->
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap">
               <div class="flex items-center gap-2">
                 <button @click="toggleMute" class="p-2 hover:bg-slate-700 rounded-lg">
                   <VolumeX v-if="isMuted || volume === 0" class="w-5 h-5" />
@@ -493,7 +493,7 @@ watch(
           <div
             class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl border border-slate-700"
           >
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4 flex-wrap">
               <div>
                 <h2 class="text-xl font-semibold">
                   Playlist
@@ -552,7 +552,7 @@ watch(
               />
             </div>
 
-            <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div class="space-y-2">
               <p v-if="clientTracks.length === 0" class="text-slate-400 text-center py-8">
                 No tracks yet. Add some music!
               </p>

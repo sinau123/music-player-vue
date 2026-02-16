@@ -362,7 +362,7 @@ watch(
 
 <template>
   <div
-    class="h-screen overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
+    class="h-screen overflow-y-auto sm:min-h-screen sm:h-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
   >
     <div class="max-w-6xl w-full mx-auto">
       <!-- Header -->
@@ -552,7 +552,7 @@ watch(
               />
             </div>
 
-            <div class="space-y-2">
+            <div class="space-y-2 sm:max-h-[500px] sm:overflow-y-auto">
               <p v-if="clientTracks.length === 0" class="text-slate-400 text-center py-8">
                 No tracks yet. Add some music!
               </p>

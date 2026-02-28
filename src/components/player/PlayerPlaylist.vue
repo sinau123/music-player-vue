@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { ref, type Ref } from 'vue'
-import { Plus, Trash2, Shuffle, Trash, Loader } from 'lucide-vue-next'
+import { ref, useTemplateRef, type Ref } from 'vue'
+import {
+  Plus,
+  Trash2,
+  Shuffle,
+  Trash,
+  Loader,
+  LucideHardDriveDownload,
+  LucideHardDriveUpload,
+} from 'lucide-vue-next'
 import { type TrackMeta } from '../../db'
 
 defineProps<{
@@ -14,6 +22,9 @@ defineProps<{
   showPlaylist: boolean
 }>()
 
+// the first argument must match the ref value in the template
+const importFileInputRef = useTemplateRef('import-input')
+
 const emit = defineEmits([
   'handleFileUpload',
   'handleShuffle',
@@ -21,6 +32,8 @@ const emit = defineEmits([
   'playTrack',
   'deleteTrack',
   'update:searchQuery',
+  'handleExport',
+  'handleImport',
 ])
 
 const searchQuery = ref('')
@@ -33,6 +46,10 @@ const handleSearchUpdate = (e: Event) => {
 
 const handleFileChange = (e: Event) => {
   emit('handleFileUpload', e)
+}
+
+const handleImportFileChange = (e: Event) => {
+  emit('handleImport', e)
 }
 </script>
 
@@ -69,19 +86,46 @@ const handleFileChange = (e: Event) => {
         @change="handleFileChange"
       />
 
-      <div class="flex items-center gap-2 py-4">
-        <button
-          @click="emit('handleShuffle')"
-          class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
-        >
-          <Shuffle class="size-4" />
-        </button>
-        <button
-          @click="emit('clearTracks')"
-          class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
-        >
-          <Trash class="size-4" />
-        </button>
+      <div class="flex flex-wrap items-center justify-between gap-2 py-4">
+        <div class="flex gap-2">
+          <button
+            @click="emit('handleShuffle')"
+            class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
+          >
+            <Shuffle class="size-4" />
+          </button>
+          <button
+            @click="emit('clearTracks')"
+            class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
+          >
+            <Trash class="size-4" />
+          </button>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            title="Export Playlist"
+            @click="emit('handleExport')"
+            class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
+          >
+            <LucideHardDriveUpload class="size-4" />
+          </button>
+          <button
+            title="Import Playlist"
+            @click="importFileInputRef?.click()"
+            class="px-4 py-1 bg-linear-to-r from-purple-500 to-pink-500 rounded-lg"
+          >
+            <LucideHardDriveDownload class="size-4" />
+          </button>
+        </div>
+
+        <input
+          ref="import-input"
+          type="file"
+          accept="zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed"
+          class="hidden"
+          @change="handleImportFileChange"
+        />
       </div>
 
       <div class="py-4">

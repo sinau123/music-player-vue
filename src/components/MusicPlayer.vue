@@ -34,18 +34,20 @@ const {
   handleShuffle,
   clearTracks,
   formatTime,
+  handleImport,
+  handleExport,
 } = musicPlayerData
 </script>
 
 <template>
   <div
-    class="h-screen overflow-y-auto sm:min-h-screen sm:h-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
+    class="h-screen overflow-y-auto sm:min-h-screen sm:h-auto bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4"
   >
     <div class="max-w-6xl w-full mx-auto">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1
-          class="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
+          class="text-4xl font-bold mb-2 bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
         >
           Music Player
         </h1>
@@ -111,6 +113,8 @@ const {
           @clear-tracks="clearTracks"
           @play-track="playTrack"
           @delete-track="deleteTrack"
+          @handle-export="handleExport"
+          @handle-import="handleImport"
           @update:search-query="(val) => (searchQuery = val)"
         />
       </div>

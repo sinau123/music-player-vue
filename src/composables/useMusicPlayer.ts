@@ -12,6 +12,7 @@ import {
   bulkSaveTracksMeta,
 } from '../db'
 import { getMp3Duration } from '../utils'
+import { useExportImportPlaylist } from './useExportImportPlaylist'
 
 export function useMusicPlayer() {
   // State
@@ -38,6 +39,8 @@ export function useMusicPlayer() {
   const analyserRef = ref<AnalyserNode | null>(null)
   const sourceRef = ref<MediaElementAudioSourceNode | null>(null)
   const animationRef = ref<number | null>(null)
+
+  const { exportAudioZip, importAudioZip } = useExportImportPlaylist()
 
   const playlist = computed(() => {
     if (!searchQuery.value) {
@@ -263,6 +266,19 @@ export function useMusicPlayer() {
     isPlaying.value = false
   }
 
+  const handleExport = () => {
+    exportAudioZip()
+  }
+
+  const handleImport = async (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const files = input.files ? Array.from(input.files) : []
+    if (!files[0]) return
+
+    const tracks = await importAudioZip(files[0])
+    clientTracks.value.push(...tracks)
+  }
+
   const formatTime = (time: number) => {
     const hours = Math.floor(time / 3600)
     const mins = Math.floor((time / 60) % 60)
@@ -360,5 +376,7 @@ export function useMusicPlayer() {
     handleShuffle,
     clearTracks,
     formatTime,
+    handleExport,
+    handleImport,
   }
 }

@@ -55,7 +55,9 @@ const handleImportFileChange = (e: Event) => {
 
 <template>
   <div :class="showPlaylist ? 'block' : 'hidden lg:block'">
-    <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl border border-slate-700">
+    <div
+      class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl border border-slate-700 max-h-[calc(100vh-5rem)]"
+    >
       <div class="flex items-center justify-between mb-4 flex-wrap">
         <div>
           <h2 class="text-xl font-semibold">

@@ -140,7 +140,7 @@ const handleImportFileChange = (e: Event) => {
         />
       </div>
 
-      <div class="space-y-2 sm:max-h-[500px] sm:overflow-y-auto custom-scrollbar">
+      <div class="space-y-2 max-h-[calc(50vh)] sm:overflow-y-auto custom-scrollbar">
         <p v-if="clientTracks.length === 0" class="text-slate-400 text-center py-8">
           No tracks yet. Add some music!
         </p>
